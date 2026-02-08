@@ -4,7 +4,7 @@ authors = [
     { name = "Bhushan Barbuddhe", email = "frappeteam@dhwaniris.com"}
 ]
 description = "MultiCloud Storage is a multi-cloud file storage app for the Frappe framework that supports Amazon S3 and Google Cloud Storage (GCS)."
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [

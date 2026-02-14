@@ -3,7 +3,7 @@
 
 import os
 import re
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 import frappe
 
@@ -135,8 +135,11 @@ def generate_file(key=None, file_name=None):
 	backend = get_backend()
 	if not backend:
 		frappe.throw(frappe._("MultiCloud Storage is not enabled"))
-	parsed_key, bucket_type = _parse_content_hash(key)
-	url = backend.get_url(parsed_key, file_name, bucket_type)
+	# URL decode the key parameter to handle both single and double encoded URLs
+	decoded_key = unquote(key)
+	decoded_file_name = unquote(file_name) if file_name else None
+	parsed_key, bucket_type = _parse_content_hash(decoded_key)
+	url = backend.get_url(parsed_key, decoded_file_name, bucket_type)
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response["location"] = url
 

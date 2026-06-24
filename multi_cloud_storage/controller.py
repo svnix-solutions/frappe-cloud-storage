@@ -3,7 +3,7 @@
 
 import os
 import re
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 import frappe
 
@@ -75,13 +75,22 @@ def _parse_content_hash(content_hash):
 	return s.strip(), "private"
 
 
+# Doctypes whose attachments are kept on the local filesystem instead of the
+# cloud, in addition to any set via the `ignore_multi_cloud_storage_doctype` site
+# config (which overrides this default). "Repost Item Valuation" writes an
+# internal .json.gz (reposting_data_file) that stock_ledger.py reads back from
+# local disk via File.get_content() and rewrites via get_full_path(); uploading
+# it deletes the local copy and breaks the repost.
+DEFAULT_IGNORE_DOCTYPES = ["Data Import", "Repost Item Valuation"]
+
+
 def file_upload_to_cloud(doc, method=None):
 	if doc.attached_to_doctype == "Prepared Report":
 		return
 	backend = get_backend()
 	if not backend:
 		return
-	ignore_doctypes = frappe.local.conf.get("ignore_multi_cloud_storage_doctype") or ["Data Import"]
+	ignore_doctypes = frappe.local.conf.get("ignore_multi_cloud_storage_doctype") or DEFAULT_IGNORE_DOCTYPES
 	if doc.attached_to_doctype in ignore_doctypes:
 		return
 	site_path = frappe.utils.get_site_path()
@@ -139,8 +148,11 @@ def generate_file(key=None, file_name=None):
 	backend = get_backend()
 	if not backend:
 		frappe.throw(frappe._("MultiCloud Storage is not enabled"))
-	parsed_key, bucket_type = _parse_content_hash(key)
-	url = backend.get_url(parsed_key, file_name, bucket_type)
+	# URL decode the key parameter to handle both single and double encoded URLs
+	decoded_key = unquote(key)
+	decoded_file_name = unquote(file_name) if file_name else None
+	parsed_key, bucket_type = _parse_content_hash(decoded_key)
+	url = backend.get_url(parsed_key, decoded_file_name, bucket_type)
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response["location"] = url
 

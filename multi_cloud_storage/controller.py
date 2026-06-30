@@ -71,13 +71,22 @@ def _parse_content_hash(content_hash):
 	return s.strip(), "private"
 
 
+# Doctypes whose attachments are kept on the local filesystem instead of the
+# cloud, in addition to any set via the `ignore_multi_cloud_storage_doctype` site
+# config (which overrides this default). "Repost Item Valuation" writes an
+# internal .json.gz (reposting_data_file) that stock_ledger.py reads back from
+# local disk via File.get_content() and rewrites via get_full_path(); uploading
+# it deletes the local copy and breaks the repost.
+DEFAULT_IGNORE_DOCTYPES = ["Data Import", "Repost Item Valuation"]
+
+
 def file_upload_to_cloud(doc, method=None):
 	if doc.attached_to_doctype == "Prepared Report":
 		return
 	backend = get_backend()
 	if not backend:
 		return
-	ignore_doctypes = frappe.local.conf.get("ignore_multi_cloud_storage_doctype") or ["Data Import"]
+	ignore_doctypes = frappe.local.conf.get("ignore_multi_cloud_storage_doctype") or DEFAULT_IGNORE_DOCTYPES
 	if doc.attached_to_doctype in ignore_doctypes:
 		return
 	site_path = frappe.utils.get_site_path()
